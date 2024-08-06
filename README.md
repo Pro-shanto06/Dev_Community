@@ -1,73 +1,251 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Dev Community API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Overview
+The Dev Community API is a RESTful service built with NestJS, MongoDB, and JWT for authentication. It enables users to manage posts and comments, and includes functionality for creating, updating, retrieving, and deleting posts and comments.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Features
+- User authentication and registration.
+- Create, update, retrieve, and delete posts.
+- Comment on posts, update, retrieve, and delete comments.
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Technologies Used
+- Backend: NestJS
+- Database: MongoDB
+- Authentication: JWT
+- Validation: class-validator
+- Password Hashing: bcryptjs
 
 ## Installation
+Clone the repository:
+1. **Clone the repository:**
+  ```bash
+  git clone https://github.com/Pro-shanto06/Dev_Community
+  cd Dev_Community
+   ```
+
+
+2. **Install dependencies:**
 
 ```bash
-$ npm install
-```
+npm install
+ ```
+3. **Set up environment variables:**
 
-## Running the app
+Create a .env file in the root directory and add the following:
+```env
+PORT=4000
+MONGO_URI=mongodb://localhost:27017/ExpressMongoCRUD
+JWT_SECRET=your_jwt_secret
+ ```
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Test
+4. **Start the server:**
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start
 ```
 
-## Support
+## API Endpoints
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Register
 
-## Stay in touch
+URL: /auth/register
+Method: POST
+Request Body:
+```json
+{
+    "fname": "Proshanto",
+    "lname": "Saha",
+    "email": "pro@gmail.com",
+    "phone": "1234567890",
+    "password": "Password123!"
+}
+```
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Response:
+```json
+{
+    "message": "User registered successfully"
+}
+```
 
-## License
+Login
 
-Nest is [MIT licensed](LICENSE).
+URL: /auth/login
+Method: POST
+Request Body:
+```json
+{
+    "email": "pro@gmail.com",
+    "password": "Password123!"
+}
+```
+Response:
+```json
+{
+    "accessToken": "jwt_token"
+}
+```
+
+Post Management
+
+Create Post
+
+URL: /posts
+Method: POST
+Request Headers:
+Authorization: Bearer <jwt_token>
+Request Body:
+```json
+{
+    "title": "My First Post",
+    "content": "This is the content of my first post."
+}
+```
+Response:
+```json
+{
+    "title": "My First Post",
+    "content": "This is the content of my first post.",
+    "author": "user_id",
+    "createdAt": "2024-08-06T12:00:00.000Z",
+    "updatedAt": "2024-08-06T12:00:00.000Z"
+}
+```
+Get All Posts
+
+URL: /posts
+Method: GET
+Response:
+```json
+[
+    {
+        "title": "My First Post",
+        "content": "This is the content of my first post.",
+        "author": "user_id",
+        "createdAt": "2024-08-06T12:00:00.000Z",
+        "updatedAt": "2024-08-06T12:00:00.000Z"
+    }
+]
+```
+Get Post by ID
+
+URL: /posts/:id
+Method: GET
+Response:
+```json
+{
+    "title": "My First Post",
+    "content": "This is the content of my first post.",
+    "author": "user_id",
+    "createdAt": "2024-08-06T12:00:00.000Z",
+    "updatedAt": "2024-08-06T12:00:00.000Z"
+}
+```
+Update Post
+
+URL: /posts/:id
+Method: PUT
+Request Headers:
+
+Authorization: Bearer <jwt_token>
+Request Body:
+```json
+{
+    "title": "Updated Title",
+    "content": "Updated content."
+}
+```
+Response:
+```json
+{
+    "title": "Updated Title",
+    "content": "Updated content.",
+    "author": "user_id",
+    "createdAt": "2024-08-06T12:00:00.000Z",
+    "updatedAt": "2024-08-06T12:00:00.000Z"
+}
+```
+Delete Post
+
+URL: /posts/:id
+Method: DELETE
+Request Headers:
+Authorization: Bearer <jwt_token>
+Response:
+```json
+{
+    "message": "Post deleted successfully"
+}
+```
+
+Comment Management
+
+Create Comment
+
+URL: /posts/:postId/comments
+Method: POST
+Request Headers:
+Authorization: Bearer <jwt_token>
+Request Body:
+```json
+{
+    "content": "This is a comment on the post."
+}
+```
+Response:
+```json
+{
+    "content": "This is a comment on the post.",
+    "post": "post_id",
+    "author": "user_id",
+    "createdAt": "2024-08-06T12:00:00.000Z"
+}
+```
+Get All Comments for Post
+
+URL: /posts/:postId/comments
+Method: GET
+Response:
+```json
+[
+    {
+        "content": "This is a comment on the post.",
+        "post": "post_id",
+        "author": "user_id",
+        "createdAt": "2024-08-06T12:00:00.000Z"
+    }
+]
+```
+Update Comment
+
+URL: /comments/:id
+Method: PUT
+Request Headers:
+Authorization: Bearer <jwt_token>
+Request Body:
+```json
+{
+    "content": "Updated comment content."
+}
+```
+Response:
+```json
+{
+    "content": "Updated comment content.",
+    "post": "post_id",
+    "author": "user_id",
+    "createdAt": "2024-08-06T12:00:00.000Z"
+}
+```
+Delete Comment
+
+URL: /comments/:id
+Method: DELETE
+Request Headers:
+Authorization: Bearer <jwt_token>
+Response:
+```json
+{
+    "message": "Comment deleted successfully"
+}
+```
