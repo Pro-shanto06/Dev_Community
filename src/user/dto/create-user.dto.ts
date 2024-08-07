@@ -15,17 +15,6 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  phone: string;
-
-  @IsString()
-  @IsNotEmpty()
   password: string;
 
-  @IsArray()
-  @IsString({ each: true })
-  skills?: string[];
-
-  @IsArray()
-  @IsString({ each: true })
-  experiences?: string[];
 }
