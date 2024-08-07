@@ -15,7 +15,7 @@ const userSchema = new Schema<User>({
   fname: { type: String, required: true },
   lname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  phone: { type: String, required: true },
+  phone: { type: String },
   password: { type: String, required: true },
   skills: { type: [String], default: [] },
   experiences: { type: [String], default: [] },
