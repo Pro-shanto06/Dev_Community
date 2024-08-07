@@ -1,8 +1,8 @@
-import { Controller, Post, Body, Param, Put, Delete, Get, UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, Request } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('posts')
 export class PostController {
@@ -10,13 +10,8 @@ export class PostController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async create(
-    @Body() createPostDto: CreatePostDto,
-    @Req() request: any
-  ) {
-    const token = request.headers.authorization?.split(' ')[1];
-
-    return this.postService.create(createPostDto, token);
+  async create(@Body() createPostDto: CreatePostDto, @Request() req) {
+    return this.postService.create(createPostDto, req.user.userId);
   }
 
   @Get()
@@ -25,30 +20,19 @@ export class PostController {
   }
 
   @Get(':id')
-  async findById(@Param('id') id: string) {
-    return this.postService.findById(id);
+  async findOne(@Param('id') id: string) {
+    return this.postService.findOne(id);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  async update(
-    @Param('id') id: string,
-    @Body() updatePostDto: UpdatePostDto,
-    @Req() request: any
-  ) {
-    const token = request.headers.authorization?.split(' ')[1];
-
-    return this.postService.update(id, updatePostDto, token);
+  async update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto, @Request() req) {
+    return this.postService.update(id, updatePostDto, req.user.userId);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async delete(
-    @Param('id') id: string,
-    @Req() request: any
-  ) {
-    const token = request.headers.authorization?.split(' ')[1];
- 
-    return this.postService.delete(id, token);
+  async delete(@Param('id') id: string, @Request() req) {
+    return this.postService.delete(id, req.user.userId);
   }
 }

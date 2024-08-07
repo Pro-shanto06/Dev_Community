@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request,Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
@@ -10,8 +10,13 @@ export class CommentController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':postId')
-  create(@Param('postId') postId: string, @Body() createCommentDto: CreateCommentDto, @Request() req) {
-    return this.commentService.create(postId, createCommentDto, req.headers.authorization.split(' ')[1]);
+  create(
+    @Param('postId') postId: string,
+    @Body() createCommentDto: CreateCommentDto,
+    @Request() req
+  ) {
+    const userId = req.user.userId;
+    return this.commentService.create(postId, createCommentDto, userId);
   }
 
   @Get()
@@ -26,13 +31,19 @@ export class CommentController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCommentDto: UpdateCommentDto, @Request() req) {
-    return this.commentService.update(id, updateCommentDto, req.headers.authorization.split(' ')[1]);
+  update(
+    @Param('id') id: string,
+    @Body() updateCommentDto: UpdateCommentDto,
+    @Request() req
+  ) {
+    const userId = req.user.userId; 
+    return this.commentService.update(id, updateCommentDto, userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req) {
-    return this.commentService.delete(id, req.headers.authorization.split(' ')[1]);
+    const userId = req.user.userId;
+    return this.commentService.delete(id, userId);
   }
 }

@@ -4,7 +4,6 @@ import { Model } from 'mongoose';
 import { Comment } from './schemas/comment.schema';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { JwtService } from '@nestjs/jwt';
 import { PostService } from '../post/post.service';
 import { UserService } from '../user/user.service';
 
@@ -14,17 +13,14 @@ export class CommentService {
 
   constructor(
     @InjectModel(Comment.name) private readonly commentModel: Model<Comment>,
-    private readonly jwtService: JwtService,
     private readonly postService: PostService,
     private readonly userService: UserService,
   ) {}
 
-  async create(postId: string, createCommentDto: CreateCommentDto, token: string): Promise<Comment> {
-    this.logger.log(`Creating a comment for post ${postId}`);
-    const decoded = this.jwtService.decode(token) as { sub: string };
-    const userId = decoded.sub;
+  async create(postId: string, createCommentDto: CreateCommentDto, userId: string): Promise<Comment> {
+    this.logger.log(`Creating a comment for post ${postId} by user ${userId}`);
 
-    const post = await this.postService.findById(postId);
+    const post = await this.postService.findOne(postId);
     if (!post) {
       this.logger.warn(`Post ${postId} not found`);
       throw new NotFoundException('Post not found');
@@ -61,10 +57,8 @@ export class CommentService {
     return comment;
   }
 
-  async update(id: string, updateCommentDto: UpdateCommentDto, token: string): Promise<Comment> {
-    this.logger.log(`Updating comment with id ${id}`);
-    const decoded = this.jwtService.decode(token) as { sub: string };
-    const userId = decoded.sub;
+  async update(id: string, updateCommentDto: UpdateCommentDto, userId: string): Promise<Comment> {
+    this.logger.log(`Updating comment with id ${id} by user ${userId}`);
 
     const comment = await this.commentModel.findById(id);
     if (!comment) {
@@ -81,10 +75,8 @@ export class CommentService {
     return this.commentModel.findByIdAndUpdate(id, updateCommentDto, { new: true }).populate('author').exec();
   }
 
-  async delete(id: string, token: string): Promise<void> {
-    this.logger.log(`Deleting comment with id ${id}`);
-    const decoded = this.jwtService.decode(token) as { sub: string };
-    const userId = decoded.sub;
+  async delete(id: string, userId: string): Promise<void> {
+    this.logger.log(`Deleting comment with id ${id} by user ${userId}`);
 
     const comment = await this.commentModel.findById(id);
     if (!comment) {
