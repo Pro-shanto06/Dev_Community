@@ -1,8 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
-import { Logger } from '@nestjs/common';
-import { ValidationPipe } from '@nestjs/common';
 
 dotenv.config();
 
@@ -12,13 +11,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe());
 
-  if (!process.env.PORT) {
-    logger.error(`PORT is not defined in the environment variables.`);
+  const port = process.env.PORT;
+  if (!port) {
+    logger.error('PORT is not defined in the environment variables.');
     process.exit(1);
   }
-  
-  await app.listen(process.env.PORT);
 
-  logger.log(`Application is Running on PORT => ${process.env.PORT}`);
+  try {
+    await app.listen(port);
+    logger.log(`Application is running on PORT => ${port}`);
+  } catch (error) {
+    logger.error(`Failed to start the application ${error.message}`);
+  }
 }
+
 bootstrap();
