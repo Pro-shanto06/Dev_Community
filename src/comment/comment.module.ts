@@ -5,7 +5,7 @@ import { CommentController } from './comment.controller';
 import { Comment, CommentSchema } from './schemas/comment.schema';
 import { PostModule } from '../post/post.module';
 import { UserModule } from '../user/user.module';
-import { JwtConfigModule } from '../config/jwt-config.module';
+import { JwtConfigModule } from '../config/jwt.config';
 
 @Module({
   imports: [

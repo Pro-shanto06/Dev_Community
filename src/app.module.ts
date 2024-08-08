@@ -1,11 +1,21 @@
 import { Module } from '@nestjs/common';
-import { ConfigurationModule } from './config/config.module';
+import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
+import { MongoModule } from './config/mongo.config';
 
 @Module({
-  imports: [ConfigurationModule,UserModule,AuthModule, PostModule, CommentModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    MongoModule,
+    UserModule,
+    AuthModule, 
+    PostModule,
+    CommentModule,
+    ],
 })
 export class AppModule {}

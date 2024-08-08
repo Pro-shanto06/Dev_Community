@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from './schemas/post.schema';
 import { PostService } from './post.service';
 import { PostController } from './post.controller';
-import { JwtConfigModule } from '../config/jwt-config.module';
+import { JwtConfigModule } from '../config/jwt.config';
 import { UserModule } from '../user/user.module'; 
 
 @Module({
