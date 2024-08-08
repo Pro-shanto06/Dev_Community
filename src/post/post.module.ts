@@ -3,13 +3,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Post, PostSchema } from './schemas/post.schema';
 import { PostService } from './post.service';
 import { PostController } from './post.controller';
-import { JwtConfigModule } from '../config/jwt.config';
 import { UserModule } from '../user/user.module'; 
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Post.name, schema: PostSchema }]),
-    JwtConfigModule, 
+    MongooseModule.forFeature([{ name: 'Post', schema: PostSchema }]),
     UserModule,
   ],
   providers: [PostService],

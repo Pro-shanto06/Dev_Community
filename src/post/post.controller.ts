@@ -15,11 +15,13 @@ export class PostController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll() {
     return this.postService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string) {
     return this.postService.findOne(id);
   }
