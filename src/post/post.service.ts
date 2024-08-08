@@ -38,12 +38,13 @@ export class PostService {
   }
 
   async findOne(id: string): Promise<Post> {
-    try {
+    
       const post = await this.postModel.findById(id);
       if (!post) {
         this.logger.warn(`Post with ID ${id} not found`);
         throw new NotFoundException(`Post with ID ${id} not found`);
       }
+      try {
       this.logger.log(`Successfully fetched post with ID ${id}`);
       return post;
     } catch (error) {
@@ -53,7 +54,7 @@ export class PostService {
   }
 
   async update(id: string, updatePostDto: UpdatePostDto, userId: string): Promise<Post> {
-    try {
+  
       const updatedPost = await this.postModel.findOneAndUpdate(
         { _id: id, author: userId },
         updatePostDto,
@@ -64,7 +65,7 @@ export class PostService {
         this.logger.warn(`Post with ID ${id} not found or not owned by user ${userId}`);
         throw new NotFoundException(`Post with ID ${id} not found or not owned by user`);
       }
-
+      try { 
       this.logger.log(`Successfully updated post with ID ${id} by user ${userId}`);
       return updatedPost;
     } catch (error) {
@@ -74,12 +75,13 @@ export class PostService {
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    try {
+    
       const result = await this.postModel.findOneAndDelete({ _id: id, author: userId });
       if (!result) {
         this.logger.warn(`Post with ID ${id} not found or not owned by user ${userId}`);
         throw new NotFoundException(`Post with ID ${id} not found or not owned by user`);
       }
+    try {
       this.logger.log(`Successfully deleted post with ID ${id} by user ${userId}`);
     } catch (error) {
       this.logger.error(`Failed to delete post with ID ${id}: ${error.message}`);

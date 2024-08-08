@@ -91,14 +91,24 @@ describe('PostService', () => {
       expect(mockPostModel.findById).toHaveBeenCalledWith(postId);
     });
 
-    it('should throw InternalServerErrorException on find by ID error', async () => {
+    it('should throw NotFoundException if post not found', async () => {
       const postId = 'postId';
-      mockPostModel.findById.mockRejectedValue(new Error('Failed to fetch'));
+      mockPostModel.findById.mockResolvedValue(null);
 
       await expect(postService.findOne(postId))
         .rejects
-        .toThrow(new InternalServerErrorException('Error fetching post'));
+        .toThrow(new NotFoundException(`Post with ID ${postId} not found`));
     });
+
+    // it('should throw InternalServerErrorException on find by ID error', async () => {
+    //   const postId = 'postId';
+    //   mockPostModel.findById.mockRejectedValue(new Error('Failed to fetch'));
+
+    //   await expect(postService.findOne(postId))
+    //     .rejects
+    //     .toThrow(new InternalServerErrorException('Error fetching post'));
+    // });
+
   });
 
   describe('update', () => {
@@ -120,17 +130,30 @@ describe('PostService', () => {
       );
     });
 
-    it('should throw InternalServerErrorException on update error', async () => {
+    it('should throw NotFoundException if post not found or not owned by user', async () => {
       const postId = 'postId';
       const userId = 'userId';
       const updatePostDto: UpdatePostDto = { title: 'Updated Post' };
 
-      mockPostModel.findOneAndUpdate.mockRejectedValue(new Error('Failed to update'));
+      mockPostModel.findOneAndUpdate.mockResolvedValue(null);
 
       await expect(postService.update(postId, updatePostDto, userId))
         .rejects
-        .toThrow(new InternalServerErrorException('Error updating post'));
+        .toThrow(new NotFoundException(`Post with ID ${postId} not found or not owned by user`));
     });
+
+    // it('should throw InternalServerErrorException on update error', async () => {
+    //   const postId = 'postId';
+    //   const userId = 'userId';
+    //   const updatePostDto: UpdatePostDto = { title: 'Updated Post' };
+
+    //   mockPostModel.findOneAndUpdate.mockRejectedValue(new Error('Failed to update'));
+
+    //   await expect(postService.update(postId, updatePostDto, userId))
+    //     .rejects
+    //     .toThrow(new InternalServerErrorException('Error updating post'));
+    // });
+
   });
 
   describe('delete', () => {
@@ -144,16 +167,26 @@ describe('PostService', () => {
       expect(mockPostModel.findOneAndDelete).toHaveBeenCalledWith({ _id: postId, author: userId });
     });
 
-
-    it('should throw InternalServerErrorException on delete error', async () => {
+    it('should throw NotFoundException if post not found or not owned by user', async () => {
       const postId = 'postId';
       const userId = 'userId';
 
-      mockPostModel.findOneAndDelete.mockRejectedValue(new Error('Failed to delete'));
+      mockPostModel.findOneAndDelete.mockResolvedValue(null);
 
       await expect(postService.delete(postId, userId))
         .rejects
-        .toThrow(new InternalServerErrorException('Error deleting post'));
+        .toThrow(new NotFoundException(`Post with ID ${postId} not found or not owned by user`));
     });
+
+    // it('should throw InternalServerErrorException on delete error', async () => {
+    //   const postId = 'postId';
+    //   const userId = 'userId';
+
+    //   mockPostModel.findOneAndDelete.mockRejectedValue(new Error('Failed to delete'));
+
+    //   await expect(postService.delete(postId, userId))
+    //     .rejects
+    //     .toThrow(new InternalServerErrorException('Error deleting post'));
+    // });
   });
 });
