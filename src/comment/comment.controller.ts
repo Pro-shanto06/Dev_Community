@@ -19,15 +19,13 @@ export class CommentController {
     return this.commentService.create(postId, createCommentDto, userId);
   }
 
-  @Get()
-  findAll(@Query('postId') postId: string) {
-    return this.commentService.findAll(postId);
-  }
+ 
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.commentService.findById(id);
   }
+
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id')

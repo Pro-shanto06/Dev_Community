@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Comment } from './schemas/comment.schema';
@@ -18,78 +18,105 @@ export class CommentService {
   ) {}
 
   async create(postId: string, createCommentDto: CreateCommentDto, userId: string): Promise<Comment> {
-    this.logger.log(`Creating a comment for post ${postId} by user ${userId}`);
+    try {
+      const post = await this.postService.findOne(postId);
+      if (!post) {
+        this.logger.warn(`Post not found`);
+        throw new NotFoundException('Post not found');
+      }
 
-    const post = await this.postService.findOne(postId);
-    if (!post) {
-      this.logger.warn(`Post ${postId} not found`);
-      throw new NotFoundException('Post not found');
+      const user = await this.userService.findById(userId);
+      if (!user) {
+        this.logger.warn(`User not found`);
+        throw new ForbiddenException('User not found');
+      }
+
+      const newComment = await this.commentModel.create({
+        ...createCommentDto,
+        post: postId,
+        author: userId,
+      });
+
+      
+      this.logger.log(`Comment created successfully`);
+      return newComment;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Failed to create comment for post: ${error.message}`);
+      throw new InternalServerErrorException('Error creating comment');
     }
-
-    const user = await this.userService.findById(userId);
-    if (!user) {
-      this.logger.warn(`User ${userId} not found`);
-      throw new ForbiddenException('User not found');
-    }
-
-    const newComment = new this.commentModel({
-      ...createCommentDto,
-      post: postId,
-      author: userId,
-    });
-
-    this.logger.log(`Comment created for post ${postId} by user ${userId}`);
-    return newComment.save();
   }
 
-  async findAll(postId: string): Promise<Comment[]> {
-    this.logger.log(`Fetching all comments for post ${postId}`);
-    return this.commentModel.find({ post: postId }).populate('author').exec();
-  }
+  
 
   async findById(id: string): Promise<Comment> {
-    this.logger.log(`Fetching comment with id ${id}`);
-    const comment = await this.commentModel.findById(id).populate('author');
-    if (!comment) {
-      this.logger.warn(`Comment with id ${id} not found`);
-      throw new NotFoundException('Comment not found');
+    try {
+      const comment = await this.commentModel.findById(id).populate('author');
+      if (!comment) {
+        this.logger.warn(`Comment with ID not found`);
+        throw new NotFoundException('Comment not found');
+      }
+      return comment;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Failed to fetch comment: ${error.message}`);
+      throw new InternalServerErrorException('Error fetching comment');
     }
-    return comment;
   }
 
-  async update(id: string, updateCommentDto: UpdateCommentDto, userId: string): Promise<Comment> {
-    this.logger.log(`Updating comment with id ${id} by user ${userId}`);
-
-    const comment = await this.commentModel.findById(id);
-    if (!comment) {
-      this.logger.warn(`Comment with id ${id} not found`);
-      throw new NotFoundException('Comment not found');
+  async update(commentId: string, updateCommentDto: UpdateCommentDto, userId: string): Promise<Comment> {
+    try {
+      const comment = await this.commentModel.findById(commentId);
+      if (!comment) {
+        this.logger.warn('Comment ID not found');
+        throw new NotFoundException('Comment not found');
+      }
+      if (comment.author.toString() !== userId) {
+        this.logger.warn('User is not allowed to update comment');
+        throw new ForbiddenException('You do not have permission to update this comment');
+      }
+      const updatedComment = await this.commentModel.findByIdAndUpdate(commentId, updateCommentDto, { new: true });
+      if (!updatedComment) {
+        this.logger.warn('Failed to update comment');
+        throw new NotFoundException('Comment not found');
+      }
+      this.logger.log('Comment updated by user');
+      return updatedComment;
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Failed to update comment: ${error.message}`);
+      throw new InternalServerErrorException('Failed to update comment');
     }
-
-    if (comment.author.toString() !== userId) {
-      this.logger.warn(`User ${userId} is not allowed to update comment ${id}`);
-      throw new ForbiddenException('You are not allowed to update this comment');
-    }
-
-    this.logger.log(`Comment with id ${id} updated by user ${userId}`);
-    return this.commentModel.findByIdAndUpdate(id, updateCommentDto, { new: true }).populate('author').exec();
   }
+  
 
   async delete(id: string, userId: string): Promise<void> {
-    this.logger.log(`Deleting comment with id ${id} by user ${userId}`);
+    try {
+      const comment = await this.commentModel.findById(id);
+      if (!comment) {
+        this.logger.warn(`Comment not found`);
+        throw new NotFoundException('Comment not found');
+      }
 
-    const comment = await this.commentModel.findById(id);
-    if (!comment) {
-      this.logger.warn(`Comment with id ${id} not found`);
-      throw new NotFoundException('Comment not found');
+      if (comment.author.toString() !== userId) {
+        this.logger.warn(`User is not allowed to delete comment`);
+        throw new ForbiddenException('You are not allowed to delete this comment');
+      }
+
+      await this.commentModel.findByIdAndDelete(id);
+      this.logger.log(`Comment deleted by user`);
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Failed to delete comment: ${error.message}`);
+      throw new InternalServerErrorException('Error deleting comment');
     }
-
-    if (comment.author.toString() !== userId) {
-      this.logger.warn(`User ${userId} is not allowed to delete comment ${id}`);
-      throw new ForbiddenException('You are not allowed to delete this comment');
-    }
-
-    await this.commentModel.findByIdAndDelete(id).exec();
-    this.logger.log(`Comment with id ${id} deleted by user ${userId}`);
   }
 }
