@@ -9,7 +9,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 export class PostService {
   private readonly logger = new Logger(PostService.name);
 
-  constructor(@InjectModel('Post') private readonly postModel: Model<Post>) {}
+  constructor(@InjectModel('Post') private readonly postModel: Model<Post>) { }
+  
 
   async create(createPostDto: CreatePostDto, userId: string): Promise<Post> {
     try {
@@ -24,7 +25,7 @@ export class PostService {
       throw new InternalServerErrorException('Error creating post');
     }
   }
-  
+
 
   async findAll(): Promise<Post[]> {
     try {
@@ -38,54 +39,67 @@ export class PostService {
   }
 
   async findOne(id: string): Promise<Post> {
-    
+    try {
       const post = await this.postModel.findById(id);
       if (!post) {
         this.logger.warn(`Post with ID ${id} not found`);
         throw new NotFoundException(`Post with ID ${id} not found`);
       }
-      try {
       this.logger.log(`Successfully fetched post with ID ${id}`);
       return post;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(`Failed to fetch post with ID ${id}: ${error.message}`);
       throw new InternalServerErrorException('Error fetching post');
     }
   }
+  
+  
 
   async update(id: string, updatePostDto: UpdatePostDto, userId: string): Promise<Post> {
-  
+    try {
       const updatedPost = await this.postModel.findOneAndUpdate(
         { _id: id, author: userId },
         updatePostDto,
         { new: true }
       );
-
+  
       if (!updatedPost) {
         this.logger.warn(`Post with ID ${id} not found or not owned by user ${userId}`);
-        throw new NotFoundException(`Post with ID ${id} not found or not owned by user`);
+        throw new NotFoundException(`Post with ID ${id} not found or not owned by user ${userId}`);
       }
-      try { 
+  
       this.logger.log(`Successfully updated post with ID ${id} by user ${userId}`);
       return updatedPost;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(`Failed to update post with ID ${id}: ${error.message}`);
       throw new InternalServerErrorException('Error updating post');
     }
   }
+  
 
   async delete(id: string, userId: string): Promise<void> {
-    
+    try {
       const result = await this.postModel.findOneAndDelete({ _id: id, author: userId });
+      
       if (!result) {
         this.logger.warn(`Post with ID ${id} not found or not owned by user ${userId}`);
-        throw new NotFoundException(`Post with ID ${id} not found or not owned by user`);
+        throw new NotFoundException(`Post with ID ${id} not found or not owned by user ${userId}`);
       }
-    try {
+  
       this.logger.log(`Successfully deleted post with ID ${id} by user ${userId}`);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(`Failed to delete post with ID ${id}: ${error.message}`);
       throw new InternalServerErrorException('Error deleting post');
     }
   }
+  
 }
