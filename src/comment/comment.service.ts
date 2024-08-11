@@ -5,6 +5,7 @@ import { Comment } from './schemas/comment.schema';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { PostService } from '../post/post.service';
+import { Post } from '../post/schemas/post.schema';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -12,10 +13,12 @@ export class CommentService {
   private readonly logger = new Logger(CommentService.name);
 
   constructor(
-    @InjectModel(Comment.name) private readonly commentModel: Model<Comment>,
+    @InjectModel('Comment') private readonly commentModel: Model<Comment>,
+    @InjectModel('Post') private readonly postModel: Model<Post>,
     private readonly postService: PostService,
     private readonly userService: UserService,
   ) {}
+  
 
   async create(postId: string, createCommentDto: CreateCommentDto, userId: string): Promise<Comment> {
     try {
@@ -36,6 +39,11 @@ export class CommentService {
         post: postId,
         author: userId,
       });
+
+      await this.postModel.updateOne(
+        { _id: postId },
+        { $push: { comments: newComment._id } }
+      );
 
       
       this.logger.log(`Comment created successfully`);

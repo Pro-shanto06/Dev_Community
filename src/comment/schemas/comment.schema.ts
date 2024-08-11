@@ -1,7 +1,4 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import { User } from '../../user/schemas/user.schema';
-import { Post } from '../../post/schemas/post.schema';
+import { Schema, Document, Types } from 'mongoose';
 
 export interface Comment extends Document {
   content: string;
@@ -10,19 +7,14 @@ export interface Comment extends Document {
   createdAt: Date;
 }
 
-@Schema({ timestamps: true })
-export class Comment {
-  @Prop({ required: true })
-  content: string;
+const commentSchema = new Schema<Comment>({
+  content: { type: String, required: true },
+  author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  post: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
+  createdAt: { type: Date, default: Date.now },
+}, {
+  timestamps: true, 
+});
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  author: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Post', required: true })
-  post: Types.ObjectId;
-
-  @Prop({ default: Date.now })
-  createdAt: Date;
-}
-
-export const CommentSchema = SchemaFactory.createForClass(Comment);
+export const CommentSchema = commentSchema;

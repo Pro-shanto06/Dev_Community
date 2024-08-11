@@ -1,4 +1,4 @@
-import { Schema, Document } from 'mongoose';
+import { Schema, Document,Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 
 export interface User extends Document {
@@ -7,6 +7,7 @@ export interface User extends Document {
   email: string;
   phone: string;
   password: string;
+  posts?: Types.ObjectId[];
   skills?: string[];
   experiences?: string[];
 }
@@ -19,6 +20,7 @@ const userSchema = new Schema<User>({
   password: { type: String, required: true },
   skills: { type: [String], default: [] },
   experiences: { type: [String], default: [] },
+  posts: [{ type: Schema.Types.ObjectId, ref: 'Post', default: [] }],
 });
 
 userSchema.pre('save', async function (next) {

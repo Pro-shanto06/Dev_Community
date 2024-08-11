@@ -4,12 +4,17 @@ import { Model } from 'mongoose';
 import { Post } from './schemas/post.schema';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { User } from '../user/schemas/user.schema';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class PostService {
   private readonly logger = new Logger(PostService.name);
 
-  constructor(@InjectModel('Post') private readonly postModel: Model<Post>) { }
+  constructor(@InjectModel('Post') private readonly postModel: Model<Post>,
+  @InjectModel('User') private readonly userModel: Model<User>,
+  private readonly userService: UserService,
+) { }
   
 
   async create(createPostDto: CreatePostDto, userId: string): Promise<Post> {
@@ -18,6 +23,13 @@ export class PostService {
         ...createPostDto,
         author: userId,
       });
+
+      
+      await this.userModel.updateOne(
+        { _id: userId },
+        { $push: { posts: createdPost._id } }
+      );
+
       this.logger.log(`Post created successfully by user ${userId}`);
       return createdPost;
     } catch (error) {

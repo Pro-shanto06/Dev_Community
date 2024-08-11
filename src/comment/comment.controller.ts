@@ -19,7 +19,6 @@ export class CommentController {
     return this.commentService.create(postId, createCommentDto, userId);
   }
 
- 
 
   @Get(':id')
   findOne(@Param('id') id: string) {
