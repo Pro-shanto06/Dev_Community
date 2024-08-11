@@ -15,7 +15,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(loginDto: LoginDto): Promise<{ message: string; access_token: string }> {
+  async login(loginDto: LoginDto): Promise<{ message: string; access_token: string, refresh_token: string }> {
     const { email, password } = loginDto;
 
     try {
@@ -33,15 +33,18 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-
       const payload = { email: user.email, sub: user._id };
       const token = this.jwtService.sign(payload);
+      const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+      user.refreshToken = await bcrypt.hash(refreshToken, 10);
+      await user.save();
 
       this.logger.log(`User ${email} logged in successfully`);
       
       return {
         message: 'User logged in successfully',
         access_token: token,
+        refresh_token: refreshToken,
       };
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof UnauthorizedException) {
@@ -51,4 +54,24 @@ export class AuthService {
       throw new InternalServerErrorException('Error to login');
     }
   }
+
+  async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
+    try {
+        const payload = this.jwtService.verify(refreshToken);
+        const user = await this.userModel.findById(payload.sub);
+
+        if (!user || !(await bcrypt.compare(refreshToken, user.refreshToken))) {
+            this.logger.warn('Invalid refresh token');
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+
+        const newAccessToken = this.jwtService.sign({ email: user.email, sub: user._id });
+        this.logger.log(`User ${user.email} refreshed their token successfully`);
+        return { access_token: newAccessToken };
+    } catch (error) {
+        this.logger.warn('Invalid refresh token');
+        throw new UnauthorizedException('Invalid refresh token');
+    }
+}
+
 }

@@ -24,6 +24,7 @@ export interface User extends Document {
   skills?: Skill[];
   experiences?: Experience[];
   posts?: Types.ObjectId[];
+  refreshToken?: string;
 }
 
 const skillSchema = new Schema<Skill>({
@@ -49,6 +50,7 @@ const userSchema = new Schema<User>({
   skills: { type: [skillSchema], default: [] },
   experiences: { type: [experienceSchema], default: [] },
   posts: [{ type: Schema.Types.ObjectId, ref: 'Post', default: [] }],
+  refreshToken: { type: String },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

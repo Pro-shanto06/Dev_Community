@@ -16,7 +16,7 @@ import {
       return next.handle().pipe(
         map(data => {
             
-          if (typeof data !== 'object' || data?.message) {
+          if (typeof data !== 'object' || data?.message || data?.access_token) {
             return data;
           }
   
