@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import { SerializationInterceptor } from './interceptors/serialization.interceptor';
+import { UserDto } from './user/dto/user.dto'
 
 dotenv.config();
 
@@ -9,7 +11,12 @@ const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
+  app.useGlobalInterceptors(new SerializationInterceptor(UserDto));
 
   const port = process.env.PORT;
   if (!port) {

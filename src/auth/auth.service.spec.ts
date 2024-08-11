@@ -50,13 +50,13 @@ describe('AuthService', () => {
     
     it('should return a token and message on successful login', async () => {
       const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
-      const user = { email: loginDto.email, password: await bcrypt.hash(loginDto.password, 10), toObject: () => ({ email: loginDto.email, _id: 'userId' }) };
+      const hashedPassword = await bcrypt.hash(loginDto.password, 10);
+      const user: User = { email: loginDto.email, password: hashedPassword } as User;
       const token = 'mockedToken';
-      
-      jest.spyOn(userModel, 'findOne').mockResolvedValue(user as any);
+
+      jest.spyOn(userModel, 'findOne').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
       jest.spyOn(jwtService, 'sign').mockReturnValue(token);
-      jest.spyOn(authService['logger'], 'log').mockImplementation(jest.fn());
 
       const result = await authService.login(loginDto);
 
@@ -79,11 +79,11 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException if password is invalid and log a warning', async () => {
       const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
-      const user = { email: loginDto.email, password: await bcrypt.hash('wrongPassword', 10), toObject: () => ({ email: loginDto.email, _id: 'userId' }) };
+      const hashedPassword = await bcrypt.hash('wrongPassword', 10);
+      const user: User = { email: loginDto.email, password: hashedPassword } as User;
 
-      jest.spyOn(userModel, 'findOne').mockResolvedValue(user as any);
+      jest.spyOn(userModel, 'findOne').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(false);
-      jest.spyOn(authService['logger'], 'warn').mockImplementation(jest.fn());
 
       await expect(authService.login(loginDto)).rejects.toThrow(UnauthorizedException);
       expect(authService['logger'].warn).toHaveBeenCalledWith(`Login attempt failed: Invalid credentials for email ${loginDto.email}`);

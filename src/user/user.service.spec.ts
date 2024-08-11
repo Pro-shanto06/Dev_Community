@@ -51,7 +51,7 @@ describe('UserService', () => {
 
       const result = await service.create(createUserDto);
       expect(result).toEqual(createdUser);
-      expect(service['logger'].log).toHaveBeenCalledWith(`User created successfully: ${createdUser.email}`);
+      expect(service['logger'].log).toHaveBeenCalledWith(`User created successfully`);
     });
 
     it('should throw ConflictException if email already in use and log the warning', async () => {
@@ -65,7 +65,7 @@ describe('UserService', () => {
       jest.spyOn(mockUserModel, 'findOne').mockResolvedValue({} as User);
 
       await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
-      expect(service['logger'].warn).toHaveBeenCalledWith(`Email ${createUserDto.email} already in use`);
+      expect(service['logger'].warn).toHaveBeenCalledWith(`Email already in use`);
     });
 
     it('should throw InternalServerErrorException if an error occurs and log the error', async () => {
@@ -91,7 +91,7 @@ describe('UserService', () => {
 
       const result = await service.getAll();
       expect(result).toEqual(users);
-      expect(service['logger'].log).toHaveBeenCalledWith(`Retrieved ${users.length} users successfully`);
+      expect(service['logger'].log).toHaveBeenCalledWith(`Retrieved users successfully`);
     });
 
     it('should throw InternalServerErrorException if an error occurs and log the error', async () => {
@@ -111,7 +111,7 @@ describe('UserService', () => {
 
       const result = await service.findById(userId);
       expect(result).toEqual(user);
-      expect(service['logger'].log).toHaveBeenCalledWith(`User with ID ${userId} found successfully`);
+      expect(service['logger'].log).toHaveBeenCalledWith(`User ID found successfully`);
       expect(mockUserModel.findById).toHaveBeenCalledWith(userId);
     });
 
@@ -124,7 +124,7 @@ describe('UserService', () => {
         
         await expect(service.findById(userId)).rejects.toThrow(NotFoundException);
     
-        expect(service['logger'].warn).toHaveBeenCalledWith(`User with ID ${userId} not found`);
+        expect(service['logger'].warn).toHaveBeenCalledWith(`User ID not found`);
       });
     
     });
@@ -134,7 +134,7 @@ describe('UserService', () => {
       jest.spyOn(mockUserModel, 'findById').mockRejectedValue(new Error('Database error'));
 
       await expect(service.findById('someId')).rejects.toThrow(InternalServerErrorException);
-      expect(service['logger'].error).toHaveBeenCalledWith('Error finding user with ID someId: Database error');
+      expect(service['logger'].error).toHaveBeenCalledWith('Error finding user: Database error');
     });
   });
 
@@ -146,21 +146,21 @@ describe('UserService', () => {
 
       const result = await service.update('someId', updateUserDto);
       expect(result).toEqual(updatedUser);
-      expect(service['logger'].log).toHaveBeenCalledWith(`User with ID someId updated successfully`);
+      expect(service['logger'].log).toHaveBeenCalledWith(`User ID updated successfully`);
     });
 
     it('should throw NotFoundException if user not found for update and log the warning', async () => {
       jest.spyOn(mockUserModel, 'findByIdAndUpdate').mockResolvedValue(null);
 
       await expect(service.update('someId', { fname: 'Jane' })).rejects.toThrow(NotFoundException);
-      expect(service['logger'].warn).toHaveBeenCalledWith(`User with ID someId not found for update`);
+      expect(service['logger'].warn).toHaveBeenCalledWith(`User ID not found for update`);
     });
 
     it('should throw InternalServerErrorException if an error occurs and log the error', async () => {
       jest.spyOn(mockUserModel, 'findByIdAndUpdate').mockRejectedValue(new Error('Database error'));
 
       await expect(service.update('someId', { fname: 'Jane' })).rejects.toThrow(InternalServerErrorException);
-      expect(service['logger'].error).toHaveBeenCalledWith('Error updating user with ID someId: Database error');
+      expect(service['logger'].error).toHaveBeenCalledWith('Error updating user: Database error');
     });
   });
 
@@ -170,21 +170,21 @@ describe('UserService', () => {
       jest.spyOn(mockUserModel, 'findByIdAndDelete').mockResolvedValue(result);
 
       await service.delete('someId');
-      expect(service['logger'].log).toHaveBeenCalledWith(`User with ID someId deleted successfully`);
+      expect(service['logger'].log).toHaveBeenCalledWith(`User ID deleted successfully`);
     });
 
     it('should throw NotFoundException if user not found for deletion and log the warning', async () => {
       jest.spyOn(mockUserModel, 'findByIdAndDelete').mockResolvedValue(null);
 
       await expect(service.delete('someId')).rejects.toThrow(NotFoundException);
-      expect(service['logger'].warn).toHaveBeenCalledWith(`User with ID someId not found for deletion`);
+      expect(service['logger'].warn).toHaveBeenCalledWith(`User ID not found for deletion`);
     });
 
     it('should throw InternalServerErrorException if an error occurs and log the error', async () => {
       jest.spyOn(mockUserModel, 'findByIdAndDelete').mockRejectedValue(new Error('Database error'));
 
       await expect(service.delete('someId')).rejects.toThrow(InternalServerErrorException);
-      expect(service['logger'].error).toHaveBeenCalledWith('Error deleting user with ID someId: Database error');
+      expect(service['logger'].error).toHaveBeenCalledWith('Error deleting user: Database error');
     });
   });
 });

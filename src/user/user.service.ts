@@ -16,12 +16,12 @@ export class UserService {
       const existingUser = await this.userModel.findOne({ email: createUserDto.email });
 
       if (existingUser) {
-        this.logger.warn(`Email ${createUserDto.email} already in use`);
+        this.logger.warn(`Email already in use`);
         throw new ConflictException('Email already in use');
       }
 
       const newUser = await this.userModel.create(createUserDto);
-      this.logger.log(`User created successfully: ${newUser.email}`);
+      this.logger.log(`User created successfully`);
       return newUser;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof ConflictException) {
@@ -35,10 +35,10 @@ export class UserService {
   async getAll(): Promise<User[]> {
     try {
       const users = await this.userModel.find();
-      this.logger.log(`Retrieved ${users.length} users successfully`);
+      this.logger.log(`Retrieved users successfully`);
       return users;
     } catch (error) {
-      this.logger.error('Error retrieving users: ' + error.message);
+      this.logger.error(`Error retrieving users: ${error.message}`);
       throw new InternalServerErrorException('Error retrieving users');
     }
   }
@@ -47,16 +47,16 @@ export class UserService {
     try {
       const user = await this.userModel.findById(id);
       if (!user) {
-        this.logger.warn(`User with ID ${id} not found`);
-        throw new NotFoundException(`User with ID ${id} not found`);
+        this.logger.warn(`User ID not found`);
+        throw new NotFoundException(`User ID not found`);
       }
-      this.logger.log(`User with ID ${id} found successfully`);
+      this.logger.log(`User ID found successfully`);
       return user;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Error finding user with ID ${id}: ${error.message}`);
+      this.logger.error(`Error finding user: ${error.message}`);
       throw new InternalServerErrorException('Error finding user');
     }
   }
@@ -65,16 +65,16 @@ export class UserService {
     try {
       const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true });
       if (!user) {
-        this.logger.warn(`User with ID ${id} not found for update`);
+        this.logger.warn(`User ID not found for update`);
         throw new NotFoundException('User not found');
       }
-      this.logger.log(`User with ID ${id} updated successfully`);
+      this.logger.log(`User ID updated successfully`);
       return user;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Error updating user with ID ${id}: ${error.message}`);
+      this.logger.error(`Error updating user: ${error.message}`);
       throw new InternalServerErrorException('Error updating user');
     }
   }
@@ -83,16 +83,16 @@ export class UserService {
     try {
       const result = await this.userModel.findByIdAndDelete(id);
       if (!result) {
-        this.logger.warn(`User with ID ${id} not found for deletion`);
+        this.logger.warn(`User ID not found for deletion`);
         throw new NotFoundException('User not found');
       }
-      this.logger.log(`User with ID ${id} deleted successfully`);
+      this.logger.log(`User ID deleted successfully`);
       return { message: 'User deleted successfully' };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Error deleting user with ID ${id}: ${error.message}`);
+      this.logger.error(`Error deleting user: ${error.message}`);
       throw new InternalServerErrorException('Error deleting user');
     }
   }
