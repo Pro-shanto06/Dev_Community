@@ -5,7 +5,10 @@ import { UserService } from './user.service';
 import { User } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SkillDto } from './dto/skill.dto';
+import { ExperienceDto } from './dto/experience.dto';
 import { ConflictException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 
 describe('UserService', () => {
   let service: UserService;
@@ -18,6 +21,7 @@ describe('UserService', () => {
     findById: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
+    save: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -149,6 +153,13 @@ describe('UserService', () => {
       expect(service['logger'].log).toHaveBeenCalledWith(`User ID updated successfully`);
     });
 
+    it('should throw ConflictException if update contains restricted fields and log a warning', async () => {
+      const updateUserDto: UpdateUserDto = { fname: 'Jane', password: 'newpassword', skills: [], experiences: [] };
+      
+      await expect(service.update('someId', updateUserDto)).rejects.toThrow(ConflictException);
+      expect(service['logger'].warn).toHaveBeenCalledWith(`Attempt to update restricted fields`);
+    });
+
     it('should throw NotFoundException if user not found for update and log the warning', async () => {
       jest.spyOn(mockUserModel, 'findByIdAndUpdate').mockResolvedValue(null);
 
@@ -185,6 +196,427 @@ describe('UserService', () => {
 
       await expect(service.delete('someId')).rejects.toThrow(InternalServerErrorException);
       expect(service['logger'].error).toHaveBeenCalledWith('Error deleting user: Database error');
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should successfully change the password and log the event', async () => {
+      const id = 'someId';
+      const currentPassword = 'currentPassword123!';
+      const newPassword = 'newPassword123!';
+      const hashedCurrentPassword = await bcrypt.hash(currentPassword, 12);
+      const user = {
+        _id: id,
+        password: hashedCurrentPassword,
+        save: jest.fn(),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async (password) => password === currentPassword);
+
+      const updatedUser = await service.changePassword(id, currentPassword, newPassword);
+      expect(updatedUser.password).toEqual(newPassword); // This verifies the password was set correctly
+      expect(service['logger'].log).toHaveBeenCalledWith(`User password updated successfully`);
+    });
+
+    it('should throw ConflictException if new password is the same as current password', async () => {
+      const id = 'someId';
+      const currentPassword = 'currentPassword123!';
+      const newPassword = 'currentPassword123!'; // Same as current
+      const hashedCurrentPassword = await bcrypt.hash(currentPassword, 12);
+      const user = {
+        _id: id,
+        password: hashedCurrentPassword,
+        save: jest.fn(),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async (password) => password === currentPassword);
+
+      await expect(service.changePassword(id, currentPassword, newPassword))
+        .rejects
+        .toThrow(new ConflictException('New password cannot be the same as the current password'));
+    });
+
+    it('should throw ConflictException if current password is incorrect', async () => {
+      const id = 'someId';
+      const currentPassword = 'wrongPassword';
+      const newPassword = 'newPassword123!';
+      const hashedCurrentPassword = await bcrypt.hash('currentPassword123!', 12);
+      const user = {
+        _id: id,
+        password: hashedCurrentPassword,
+        save: jest.fn(),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async (password) => password === 'currentPassword123!');
+
+      await expect(service.changePassword(id, currentPassword, newPassword))
+        .rejects
+        .toThrow(new ConflictException('Current password is incorrect'));
+    });
+
+    it('should throw NotFoundException if user is not found', async () => {
+      const id = 'someId';
+      const currentPassword = 'currentPassword123!';
+      const newPassword = 'newPassword123!';
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(null);
+
+      await expect(service.changePassword(id, currentPassword, newPassword))
+        .rejects
+        .toThrow(new NotFoundException('User not found'));
+    });
+
+    it('should throw InternalServerErrorException if an error occurs', async () => {
+      const id = 'someId';
+      const currentPassword = 'currentPassword123!';
+      const newPassword = 'newPassword123!';
+
+      jest.spyOn(mockUserModel, 'findById').mockRejectedValue(new Error('Database error'));
+
+      await expect(service.changePassword(id, currentPassword, newPassword))
+        .rejects
+        .toThrow(new InternalServerErrorException('Error updating password'));
+    });
+  });
+
+
+  describe('addSkill', () => {
+    it('should add a new skill and return the updated user', async () => {
+      const userId = 'someId';
+      const skillDto: SkillDto = { name: 'TypeScript', level: 'Advanced' };
+
+      const user = {
+        _id: userId,
+        skills: [],
+        save: jest.fn().mockResolvedValue({
+          _id: userId,
+          skills: [skillDto],
+        }),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+
+      const result = await service.addSkill(userId, skillDto);
+      expect(result.skills).toContain(skillDto);
+      expect(result.skills.length).toBe(1);
+      expect(service['logger'].log).toHaveBeenCalledWith('Skill added successfully');
+    });
+
+    it('should throw ConflictException if the skill already exists', async () => {
+      const userId = 'someId';
+      const skillDto: SkillDto = { name: 'TypeScript', level: 'Advanced' };
+
+      const user = {
+        _id: userId,
+        skills: [skillDto],
+        save: jest.fn().mockResolvedValue(this),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+
+      await expect(service.addSkill(userId, skillDto)).rejects.toThrow(ConflictException);
+      expect(service['logger'].warn).toHaveBeenCalledWith('Skill already exists for this user');
+    });
+
+    it('should throw NotFoundException if the user is not found', async () => {
+      const userId = 'someId';
+      const skillDto: SkillDto = { name: 'TypeScript', level: 'Advanced' };
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(null);
+
+      await expect(service.addSkill(userId, skillDto)).rejects.toThrow(NotFoundException);
+      expect(service['logger'].warn).toHaveBeenCalledWith('User ID not found for adding skill');
+    });
+  })
+  
+  describe('addExperience', () => {
+    it('should add a new experience and return the updated user', async () => {
+      const userId = 'someId';
+      const experienceDto: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2023-01-01'),
+      };
+
+      const user = {
+        _id: userId,
+        experiences: [],
+        save: jest.fn().mockResolvedValue({
+          _id: userId,
+          experiences: [experienceDto],
+        }),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+
+      const result = await service.addExperience(userId, experienceDto);
+      expect(result.experiences).toContainEqual(experienceDto);
+      expect(result.experiences.length).toBe(1);
+      expect(service['logger'].log).toHaveBeenCalledWith('Experience added successfully');
+    });
+
+    it('should throw ConflictException if the experience already exists', async () => {
+      const userId = 'someId';
+      const experienceDto: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2023-01-01'),
+      };
+
+      const user = {
+        _id: userId,
+        experiences: [experienceDto],
+        save: jest.fn().mockResolvedValue(this),
+      } as unknown as User;
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user);
+
+      await expect(service.addExperience(userId, experienceDto)).rejects.toThrow(ConflictException);
+      expect(service['logger'].warn).toHaveBeenCalledWith('Duplicate experience detected');
+    });
+
+    it('should throw NotFoundException if the user is not found', async () => {
+      const userId = 'someId';
+      const experienceDto: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2023-01-01'),
+      };
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(null);
+
+      await expect(service.addExperience(userId, experienceDto)).rejects.toThrow(NotFoundException);
+      expect(service['logger'].warn).toHaveBeenCalledWith('User ID not found for adding experience');
+    });
+  });
+
+
+  describe('updateSkill', () => {
+    it('should update a skill and return the updated user', async () => {
+      const userId = 'userId';
+      const oldSkillName = 'JavaScript';
+      const updatedSkillDto: SkillDto = { name: 'TypeScript', level: 'Expert' };
+
+      const user = {
+        _id: userId,
+        skills: [{ name: oldSkillName, level: 'Intermediate' }],
+        save: jest.fn().mockResolvedValue({
+          _id: userId,
+          skills: [updatedSkillDto],
+        }),
+      };
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user as any);
+
+      const updatedUser = await service.updateSkill(userId, oldSkillName, updatedSkillDto);
+      expect(updatedUser.skills[0]).toEqual(updatedSkillDto);
+    });
+
+    it('should throw NotFoundException if the user does not exist', async () => {
+      const userId = 'userId';
+      const skillName = 'JavaScript';
+      const skillDto: SkillDto = { name: 'TypeScript', level: 'Expert' };
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(null);
+
+      await expect(service.updateSkill(userId, skillName, skillDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if the skill to update does not exist', async () => {
+      const userId = 'userId';
+      const oldSkillName = 'JavaScript';
+      const skillDto: SkillDto = { name: 'TypeScript', level: 'Expert' };
+
+      const user = {
+        _id: userId,
+        skills: [{ name: 'Python', level: 'Intermediate' }],
+        save: jest.fn().mockResolvedValue({
+          _id: userId,
+          skills: [skillDto],
+        }),
+      };
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user as any);
+
+      await expect(service.updateSkill(userId, oldSkillName, skillDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ConflictException if the updated skill name already exists', async () => {
+      const userId = 'userId';
+      const oldSkillName = 'JavaScript';
+      const updatedSkillDto: SkillDto = { name: 'Python', level: 'Expert' };
+
+      const user = {
+        _id: userId,
+        skills: [
+          { name: 'JavaScript', level: 'Intermediate' },
+          { name: 'Python', level: 'Beginner' },
+        ],
+        save: jest.fn().mockResolvedValue({
+          _id: userId,
+          skills: [updatedSkillDto],
+        }),
+      };
+
+      jest.spyOn(mockUserModel, 'findById').mockResolvedValue(user as any);
+
+      await expect(service.updateSkill(userId, oldSkillName, updatedSkillDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw InternalServerErrorException if an unexpected error occurs', async () => {
+      const userId = 'userId';
+      const oldSkillName = 'JavaScript';
+      const skillDto: SkillDto = { name: 'TypeScript', level: 'Expert' };
+
+      jest.spyOn(mockUserModel, 'findById').mockRejectedValue(new Error('Unexpected error'));
+
+      await expect(service.updateSkill(userId, oldSkillName, skillDto)).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  describe('updateExperience', () => {
+    it('should successfully update experience', async () => {
+      const userId = '60d0fe4f5311236168a109ca';
+      const oldExperience: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2022-12-31'),
+      };
+      const newExperienceDto: ExperienceDto = {
+        title: 'Senior Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2023-01-01'),
+        endDate: new Date('2023-12-31'),
+      };
+
+      const user = {
+        _id: userId,
+        experiences: [oldExperience],
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      jest.spyOn(userModel, 'findById').mockResolvedValue(user as any);
+
+      const result = await service.updateExperience(userId, oldExperience, newExperienceDto);
+
+      expect(result).toBe(user);
+      expect(user.experiences).toContainEqual(newExperienceDto);
+      expect(user.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if user is not found', async () => {
+      const userId = '60d0fe4f5311236168a109ca';
+      const oldExperience: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2022-12-31'),
+      };
+      const newExperienceDto: ExperienceDto = {
+        title: 'Senior Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2023-01-01'),
+        endDate: new Date('2023-12-31'),
+      };
+
+      jest.spyOn(userModel, 'findById').mockResolvedValue(null);
+
+      await expect(service.updateExperience(userId, oldExperience, newExperienceDto))
+        .rejects
+        .toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if experience to update is not found', async () => {
+      const userId = '60d0fe4f5311236168a109ca';
+      const oldExperience: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2022-12-31'),
+      };
+      const newExperienceDto: ExperienceDto = {
+        title: 'Senior Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2023-01-01'),
+        endDate: new Date('2023-12-31'),
+      };
+
+      const user = {
+        _id: userId,
+        experiences: [], // No matching experience
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      jest.spyOn(userModel, 'findById').mockResolvedValue(user as any);
+
+      await expect(service.updateExperience(userId, oldExperience, newExperienceDto))
+        .rejects
+        .toThrow(NotFoundException);
+    });
+
+    it('should throw ConflictException if experience overlaps with an existing experience', async () => {
+      const userId = '60d0fe4f5311236168a109ca';
+      const oldExperience: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2022-12-31'),
+      };
+      const newExperienceDto: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-06-01'),
+        endDate: new Date('2023-01-01'),
+      };
+
+      const user = {
+        _id: userId,
+        experiences: [
+          oldExperience,
+          {
+            title: 'Software Engineer',
+            company: 'Tech Corp',
+            startDate: new Date('2022-01-01'),
+            endDate: new Date('2022-12-31'),
+          },
+        ],
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      jest.spyOn(userModel, 'findById').mockResolvedValue(user as any);
+
+      await expect(service.updateExperience(userId, oldExperience, newExperienceDto))
+        .rejects
+        .toThrow(ConflictException);
+    });
+
+    it('should throw InternalServerErrorException for unknown errors', async () => {
+      const userId = '60d0fe4f5311236168a109ca';
+      const oldExperience: ExperienceDto = {
+        title: 'Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2022-01-01'),
+        endDate: new Date('2022-12-31'),
+      };
+      const newExperienceDto: ExperienceDto = {
+        title: 'Senior Software Engineer',
+        company: 'Tech Corp',
+        startDate: new Date('2023-01-01'),
+        endDate: new Date('2023-12-31'),
+      };
+
+      jest.spyOn(userModel, 'findById').mockRejectedValue(new Error('Unexpected error'));
+
+      await expect(service.updateExperience(userId, oldExperience, newExperienceDto))
+        .rejects
+        .toThrow(InternalServerErrorException);
     });
   });
 });
