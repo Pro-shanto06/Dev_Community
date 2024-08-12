@@ -2,8 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
-import { SerializationInterceptor } from './interceptors/serialization.interceptor';
-import { UserDto } from './user/dto/user.dto'
+import { SerializationInterceptor } from './common/interceptors/serialization.interceptor';
+import { UserDto } from './modules/user/dto/user.dto'
 
 dotenv.config();
 

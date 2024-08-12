@@ -35,6 +35,12 @@ describe('PostService', () => {
             updateOne: jest.fn(),
           },
         },
+        {
+          provide: UserService,
+          useValue: {
+            // Mocking UserService if needed
+          },
+        },
       ],
     }).compile();
 
